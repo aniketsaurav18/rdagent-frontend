@@ -8,7 +8,6 @@ import {
   MoreHorizontal,
   Settings,
   Share2,
-  Star,
   Edit,
   X,
   ExternalLink,
@@ -95,7 +94,6 @@ export default function ProjectDashboard({ projectId }: { projectId: string }) {
     selectCurrentProjectError(state)
   );
 
-  const [isFavorite, setIsFavorite] = useState(false);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState("");
@@ -195,9 +193,6 @@ export default function ProjectDashboard({ projectId }: { projectId: string }) {
     return null;
   }
 
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -347,26 +342,25 @@ export default function ProjectDashboard({ projectId }: { projectId: string }) {
                 >
                   <ArrowLeft size={16} />
                 </Link>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold tracking-tight">
-                    {project.title}
-                  </h1>
-                  <button
-                    onClick={toggleFavorite}
-                    className={`p-1 rounded-full ${
-                      isFavorite
-                        ? "text-amber-500"
-                        : "text-muted-foreground hover:text-amber-500"
-                    }`}
-                    aria-label={
-                      isFavorite ? "Remove from favorites" : "Add to favorites"
-                    }
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-3">
+                    <h1 className="text-2xl font-bold tracking-tight">
+                      {project.title}
+                    </h1>
+                    {/* <p className="text-sm text-muted-foreground flex items-center">
+                      <Clock className="h-3.5 w-3.5 mr-1.5 inline-block" />
+                      {new Date(project.updated_at).toLocaleDateString()}
+                    </p> */}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                    className="h-9 gap-1.5 rounded-md hover:bg-muted/80 hover:border-muted-foreground/20 transition-all duration-200 backdrop-blur-sm ml-auto"
                   >
-                    <Star
-                      size={18}
-                      fill={isFavorite ? "currentColor" : "none"}
-                    />
-                  </button>
+                    <Edit className="h-4 w-4" />
+                    Edit
+                  </Button>
                 </div>
               </div>
 
@@ -376,39 +370,6 @@ export default function ProjectDashboard({ projectId }: { projectId: string }) {
             {/* Project details card */}
             {!isEditing ? (
               <Card className="overflow-hidden border shadow-md rounded-lg bg-gradient-to-b from-card to-background/80 dark:from-card dark:to-background/90 backdrop-blur-sm">
-                <div className="relative px-5 py-4 flex justify-between items-center border-b bg-gradient-to-r from-background/80 via-card/90 to-background/80 dark:from-background/60 dark:via-card/80 dark:to-background/60 backdrop-blur-sm">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <div className="flex items-center gap-2.5 mb-1.5">
-                        <h2 className="text-xl font-semibold tracking-tight">
-                          {project.title}
-                        </h2>
-                        <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100/80 text-green-800 dark:bg-green-900/30 dark:text-green-400 border border-green-200 dark:border-green-800/30">
-                          <span className="relative flex h-1.5 w-1.5 mr-1.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
-                          </span>
-                          {project.status}
-                        </div>
-                      </div>
-                      <p className="text-sm text-muted-foreground flex items-center">
-                        <Clock className="h-3.5 w-3.5 mr-1.5 inline-block" />
-                        Last updated{" "}
-                        {new Date(project.updated_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditing(true)}
-                    className="h-9 gap-1.5 rounded-md hover:bg-muted/80 hover:border-muted-foreground/20 transition-all duration-200 backdrop-blur-sm"
-                  >
-                    <Edit className="h-4 w-4" />
-                    Edit
-                  </Button>
-                </div>
 
                 <CardContent className="p-0">
                   <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-5 bg-gradient-to-br from-transparent via-background/40 to-transparent dark:from-transparent dark:via-card/30 dark:to-transparent backdrop-blur-sm">

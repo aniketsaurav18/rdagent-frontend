@@ -265,7 +265,6 @@ export default function AgentsPage() {
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log("SSE Event:", data);
 
         // Handle different types of events
         if (data.type === "agent_status") {
@@ -282,7 +281,6 @@ export default function AgentsPage() {
 
                 return oldData.map((agent) => {
                   if (agent.id === agent_id) {
-                    console.log("Matched agent:", agent);
                     return { ...agent, agent_status: "completed" }; // Update status
                   }
                   return agent;
@@ -503,14 +501,6 @@ export default function AgentsPage() {
                   Deploy intelligent agents to automate engagement, generate
                   leads, and grow your business on autopilot.
                 </p>
-                <div className="flex gap-2 pt-1">
-                  <Button
-                    className="gap-1.5 h-7 text-xs bg-white text-slate-900 hover:bg-white/90"
-                    onClick={() => setIsCreateModalOpen(true)}
-                  >
-                    <Plus className="h-3 w-3" /> Create agent
-                  </Button>
-                </div>
               </div>
               <div className="w-full md:w-auto">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

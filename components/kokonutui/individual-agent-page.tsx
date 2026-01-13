@@ -360,23 +360,7 @@ const PerformanceMetrics = React.memo(function PerformanceMetrics({
   const top_posts = posts?.top_posts;
 
   // Debug logging to see what data we're receiving
-  console.log("Analytics data received:", {
-    runs,
-    posts: posts
-      ? {
-          total_distinct: posts.total_distinct,
-          by_subreddit_count: posts.by_subreddit?.length,
-          time_series_count: posts.time_series?.length,
-          engagement: posts.engagement,
-          relevance: posts.relevance,
-          top_posts: posts.top_posts?.length || 0,
-        }
-      : null,
-    extracted_engagement: engagement,
-    extracted_relevance: relevance,
-    extracted_top_posts: top_posts?.length || 0,
-    per_run,
-  });
+ 
 
   // Calculate derived metrics
   const successRate =
@@ -1518,24 +1502,15 @@ export default function IndividualAgentPage({ agentId }: { agentId: string }) {
         // Set current agent ID in the store
         dispatch(setCurrentAgentId(agentId));
 
-        // Always fetch agent details from /agents/{id}/details endpoint
-        console.log(
-          "Fetching agent details from /agents/{id}/details for agentId:",
-          agentId
-        );
+
         await dispatch(fetchAgentDetails(agentId));
 
         // Also fetch agent data for posts/results if needed
         if (!agentFromList) {
-          console.log(
-            "Fetching agent data from /agents/{id}/results for agentId:",
-            agentId
-          );
+
           await dispatch(fetchAgentData(agentId));
         } else {
-          console.log(
-            "Using agent data from agents list, skipping /agents/{id}/results call"
-          );
+
         }
 
         // Mark this agent as fetched
@@ -2052,7 +2027,6 @@ const ContentDetails = React.memo(function ContentDetails({
                 onSend={(markdown) => {
                   // Handle reply submission here
                   // e.g., call an API or update state
-                  console.log("Reply sent:", markdown);
                 }}
               />
             </div>

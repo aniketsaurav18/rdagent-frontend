@@ -383,6 +383,17 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
   };
 
   const goToNextStep = () => {
+    // Validate keywords before moving to Step 4 (Review)
+    if (currentStep === 3) {
+      if (!agentKeywords || agentKeywords.length === 0) {
+        toast({
+          title: "Validation Error",
+          description: "Please add at least one agent keyword before proceeding to review.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     setCurrentStep((prev) => prev + 1);
   };
 
@@ -464,6 +475,18 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
         description: "Project ID is required",
         variant: "destructive",
       });
+      return;
+    }
+
+    // Validate that at least one keyword is added
+    if (!agentKeywords || agentKeywords.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please add at least one agent keyword before creating the agent.",
+        variant: "destructive",
+      });
+      // Navigate back to Step 2 where keywords are managed
+      setCurrentStep(2);
       return;
     }
 

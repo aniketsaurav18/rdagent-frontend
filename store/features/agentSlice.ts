@@ -461,7 +461,6 @@ export const fetchAgentData = createAsyncThunk(
       if (!token) {
         throw new Error("Authentication required");
       }
-      console.log("Fetching agent data for agentId:", agentId);
       const idNum = Number(agentId);
       if (Number.isNaN(idNum)) {
         throw new Error("Invalid agentId");
@@ -480,8 +479,7 @@ export const fetchAgentData = createAsyncThunk(
       const data = await response.json();
       const agentData = data[0]; // Get the first item from the response array
 
-      console.log("Agent Data:", agentData); // Debug log
-      console.log("Agent Platform:", agentData.results?.agent_platform); // Debug log
+      
 
       // Determine agent type first
       let agentType: AgentType = "mixed";
@@ -529,10 +527,7 @@ export const fetchAgentData = createAsyncThunk(
         transformedYoutubePosts = agentData.results?.posts || [];
       }
 
-      console.log("Determined Agent Type:", agentType); // Debug log
-      console.log("Transformed Twitter Posts:", transformedTwitterPosts); // Debug log
-      console.log("Transformed Reddit Posts:", transformedRedditPosts); // Debug log
-
+     
       // Return the transformed data
       return {
         agentId,

@@ -304,10 +304,8 @@ export default function ProjectsPage() {
   const handleBulkAction = (action: string) => {
     switch (action) {
       case "delete":
-        console.log("Deleting projects:", selectedProjects);
         break;
       case "export":
-        console.log("Exporting projects:", selectedProjects);
         break;
     }
     setSelectedProjects([]);
