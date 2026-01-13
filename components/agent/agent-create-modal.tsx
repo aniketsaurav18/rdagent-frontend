@@ -377,15 +377,6 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
   };
 
   const goToNextStep = () => {
-    // Validate keywords when leaving Step 2 (Agent Settings)
-    if (currentStep === 2) {
-      if (!agentKeywords || agentKeywords.length === 0) {
-        toast.error("Validation Error", {
-          description: "Please add at least one agent keyword before proceeding.",
-        });
-        return;
-      }
-    }
     setCurrentStep((prev) => prev + 1);
   };
 
@@ -462,9 +453,6 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
 
     // Validate that at least one keyword is added
     if (!agentKeywords || agentKeywords.length === 0) {
-      toast.error("Validation Error", {
-        description: "Please add at least one agent keyword before creating the agent.",
-      });
       // Navigate back to Step 2 where keywords are managed
       setCurrentStep(2);
       return;
@@ -995,6 +983,10 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
                     Add Keyword
                   </Button>
                 </div>
+                {agentKeywords.length === 0 && (
+                  <p className="text-xs text-destructive dark:text-red-400 mt-1">Required</p>
+
+                )}
                 {agentKeywords.length > 8 && (
                   <div className="text-[11px] text-muted-foreground">
                     Showing {Math.min(agentKeywords.length, 50)} keywords
@@ -1782,6 +1774,7 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
               onClick={goToNextStep}
               size="sm"
               className="gap-2 w-full sm:w-auto h-8"
+              disabled={currentStep === 2 && (!agentKeywords || agentKeywords.length === 0)}
             >
               Next
               <ChevronRight className="h-4 w-4" />
