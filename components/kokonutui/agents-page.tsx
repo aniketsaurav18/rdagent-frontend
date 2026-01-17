@@ -183,12 +183,13 @@ export default function AgentsPage() {
   const agentLimitTotal = useSelector((state: RootState) =>
     selectAgentLimitTotal(state)
   );
-  const isSubscriptionInactive = useSelector((state: RootState) =>
-    state.user.info?.subscription?.status === 'inactive'
+  const isSubscriptionInactive = useSelector(
+    (state: RootState) => state.user.info?.subscription?.status === "inactive"
   );
 
   const isAgentLimitReached =
-    (agentLimitUsed >= agentLimitTotal && agentLimitTotal > 0) || isSubscriptionInactive;
+    (agentLimitUsed >= agentLimitTotal && agentLimitTotal > 0) ||
+    isSubscriptionInactive;
 
   // Get current project from currentProject slice (has full project data including keywords)
   const currentProject = useSelector((state: RootState) =>
@@ -609,7 +610,9 @@ export default function AgentsPage() {
                 <PopoverContent className="w-80 p-4" side="bottom" align="end">
                   <div className="space-y-2">
                     <h4 className="font-medium text-sm">
-                      {isSubscriptionInactive ? "Subscription Inactive" : "Agent Limit Reached"}
+                      {isSubscriptionInactive
+                        ? "Subscription Inactive"
+                        : "Agent Limit Reached"}
                     </h4>
                     <p className="text-sm text-muted-foreground">
                       {isSubscriptionInactive
@@ -619,9 +622,15 @@ export default function AgentsPage() {
                     <Button
                       size="sm"
                       className="w-full mt-2"
-                      onClick={() => router.push(isSubscriptionInactive ? "/pricing" : "/upgrade")}
+                      onClick={() =>
+                        router.push(
+                          isSubscriptionInactive ? "/pricing" : "/upgrade"
+                        )
+                      }
                     >
-                      {isSubscriptionInactive ? "Activate Subscription" : "Upgrade Plan"}
+                      {isSubscriptionInactive
+                        ? "Activate Subscription"
+                        : "Upgrade Plan"}
                     </Button>
                   </div>
                 </PopoverContent>
@@ -635,9 +644,7 @@ export default function AgentsPage() {
           {isLoading ? (
             // Loading state
             <div className="col-span-full flex flex-col items-center justify-center py-12">
-              <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-4 animate-spin">
-                <RedditIcon className="h-8 w-8 text-muted-foreground" />
-              </div>
+              <LoaderCircle className="h-10 w-10 text-muted-foreground animate-spin" />
               <h3 className="text-lg font-semibold mb-2">Loading agents...</h3>
             </div>
           ) : error ? (
@@ -720,7 +727,10 @@ export default function AgentsPage() {
                         >
                           <PlatformIcon
                             platform={agent.agent_platform}
-                            className={cn("h-6 w-6", getPlatformIconColor(agent.agent_platform))}
+                            className={cn(
+                              "h-6 w-6",
+                              getPlatformIconColor(agent.agent_platform)
+                            )}
                           />
                         </div>
                         <div>
@@ -806,7 +816,12 @@ export default function AgentsPage() {
                           return (
                             <div className="rounded-md border bg-muted/30 px-2.5 py-2">
                               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1">
-                                <RedditIcon className={cn("h-3.5 w-3.5", getPlatformIconColor("reddit"))} />
+                                <RedditIcon
+                                  className={cn(
+                                    "h-3.5 w-3.5",
+                                    getPlatformIconColor("reddit")
+                                  )}
+                                />
                                 <span className="text-foreground/80 font-medium">
                                   Reddit Settings
                                 </span>
@@ -852,7 +867,6 @@ export default function AgentsPage() {
                       ) : null} */}
                     </div>
                   </CardContent>
-
                 </Card>
               );
             })
