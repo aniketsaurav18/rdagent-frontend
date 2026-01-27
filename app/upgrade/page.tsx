@@ -16,15 +16,13 @@ export default function UpgradePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [showRedirectMessage, setShowRedirectMessage] = useState(false);
   // Debug: log the full Redux state
-  useSelector(state => { console.log('Full Redux state:', state); return state; });
+  useSelector(state => { return state; });
   const currentPlanId = useSelector(state => {
     const value = selectUserPlanId(state);
-    console.log('selectUserPlanId:', value);
     return value;
   });
   const currentBillingType = useSelector(state => {
     const value = selectUserBillingType(state);
-    console.log('selectUserBillingType:', value);
     return value;
   });
 
@@ -70,7 +68,6 @@ export default function UpgradePage() {
       variant: "default",
     });
     
-    console.log("Selected plan ID:", planId);
   };
 
   // Show loading state while checking authentication

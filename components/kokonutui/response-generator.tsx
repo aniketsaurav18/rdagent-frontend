@@ -104,7 +104,6 @@ export default function ResponseComposer({
           user_text: "",
         }),
       }).then((r) => r.json());
-      console.log(aiResponse);
       const generatedReply = aiResponse.reply || "";
       // Update both local and Redux state
       setLocalResponse(generatedReply);
@@ -191,7 +190,6 @@ export default function ResponseComposer({
       // Call the onSend callback if provided
       onSend?.(requestBody.message);
 
-      console.log("Reply sent successfully:", result);
     } catch (error) {
       console.error("Failed to send reply:", error);
       // You could add a toast notification here for error handling

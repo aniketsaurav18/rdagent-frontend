@@ -95,9 +95,8 @@ export default function Profile01() {
         <div className="relative px-3 pt-3 pb-2">
           <div className="flex items-center gap-4 mb-6">
             <div className="relative shrink-0">
-              <Avatar className="w-15 h-15 ring-3 ring-white dark:ring-zinc-900">
-                <AvatarImage src={avatar} alt={name} />
-                <AvatarFallback className="text-lg font-semibold bg-primary text-primary-foreground">
+              <Avatar className="w-12 h-12 ring-3 ring-white dark:ring-zinc-900">
+                <AvatarFallback className="text-lg font-bold bg-primary text-primary-foreground">
                   {name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>

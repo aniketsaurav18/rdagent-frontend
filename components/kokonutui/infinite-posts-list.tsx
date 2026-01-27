@@ -177,7 +177,6 @@ export function InfinitePostsList({
   useEffect(() => {
     if (!agentId || posts.length > 0) return;
 
-    console.log("Initial fetch - no posts exist");
     dispatch(
       fetchAgentPosts({
         agentId,

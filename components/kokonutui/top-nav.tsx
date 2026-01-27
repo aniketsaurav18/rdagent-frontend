@@ -102,7 +102,6 @@ export default function TopNav({ currentProject }: TopNavProps) {
         <DropdownMenu>
           <DropdownMenuTrigger className="focus:outline-none">
             <Avatar className="w-5 h-5 sm:w-6 sm:h-6 ring-1 ring-gray-200 dark:ring-[#2B2B30] cursor-pointer">
-              <AvatarImage src="https://ferf1mheo22r9ira.public.blob.vercel-storage.com/avatar-01-n0x8HFv8EUetf9z6ht0wScJKoTHqf8.png" alt="User avatar" />
               <AvatarFallback className="text-xs font-semibold bg-primary text-primary-foreground">
                 {userInfo?.username?.charAt(0).toUpperCase() || 'U'}
               </AvatarFallback>

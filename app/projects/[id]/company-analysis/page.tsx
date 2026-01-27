@@ -28,6 +28,7 @@ import {
   AlertTriangle,
   Hash,
   DollarSign,
+  Search,
 } from "lucide-react"
 import { YouTubeAnalysis } from "@/components/social-media/youtube-analysis"
 import { TwitterAnalysis } from "@/components/social-media/twitter-analysis"
@@ -297,6 +298,18 @@ export default function CompanyAnalysisPage() {
                 Website
               </button>
               <button
+                onClick={() => setActiveTab("seo")}
+                className={cn(
+                  "flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-medium transition-colors",
+                  activeTab === "seo"
+                    ? "border-gray-900 dark:border-gray-100 text-gray-900 dark:text-gray-100"
+                    : "border-transparent text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600 hover:text-gray-700 dark:hover:text-gray-300",
+                )}
+              >
+                <Search className="h-4 w-4" />
+                SEO
+              </button>
+              <button
                 onClick={() => setActiveTab("social")}
                 className={cn(
                   "flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-medium transition-colors",
@@ -420,22 +433,15 @@ export default function CompanyAnalysisPage() {
 
           {activeTab === "website" && (
             <div className="mt-0 h-full flex flex-col min-h-0">
-                          <Tabs defaultValue="seo" className="flex-1 min-h-0 flex flex-col">
+              <Tabs defaultValue="features" className="flex-1 min-h-0 flex flex-col">
                 <div className="flex justify-center mb-4">
                   <TabsList className="inline-flex h-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 p-1 text-gray-500 dark:text-gray-400">
                     <TabsTrigger
-                      value="seo"
-                      className="inline-flex items-center justify-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm dark:ring-offset-gray-950 dark:focus-visible:ring-gray-300 dark:data-[state=active]:bg-gray-950 dark:data-[state=active]:text-gray-100"
-                    >
-                      <Globe className="h-4 w-4 mr-1.5" />
-                      SEO
-                    </TabsTrigger>
-                    <TabsTrigger
-                    value="features"
+                      value="features"
                       className="inline-flex items-center justify-center whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm dark:ring-offset-gray-950 dark:focus-visible:ring-gray-300 dark:data-[state=active]:bg-gray-950 dark:data-[state=active]:text-gray-100"
                     >
                       <BarChart2 className="h-4 w-4 mr-1.5" />
-                    Features
+                      Features
                     </TabsTrigger>
                     <TabsTrigger
                       value="pricing"
@@ -448,23 +454,6 @@ export default function CompanyAnalysisPage() {
                 </div>
 
                 <div className="flex-1 min-h-0 overflow-hidden">
-                  <TabsContent value="seo" className="mt-0 h-full">
-                    <ScrollArea className="h-full">
-                      <div className="pr-4 pb-20 space-y-6">
-                        <div>
-                          <div className="flex items-center gap-2 mb-4">
-                            <Globe className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">SEO Traffic</h2>
-                          </div>
-                          {/* Replace this sample with real data source once connected */}
-                          <SeoTraffic
-                            data={seoFromStore}
-                          />
-                        </div>
-                      </div>
-                    </ScrollArea>
-                  </TabsContent>
-
                   <TabsContent value="features" className="mt-0 h-full">
                     <ScrollArea className="h-full">
                       <div className="pr-4 pb-20 space-y-6">
@@ -516,8 +505,6 @@ export default function CompanyAnalysisPage() {
                             }}
                           />
                         </div>
-
-                        
                       </div>
                     </ScrollArea>
                   </TabsContent>
@@ -534,13 +521,23 @@ export default function CompanyAnalysisPage() {
                             plans={pricingAnalysis?.plans || []}
                           />
                         </div>
-
-                        
                       </div>
                     </ScrollArea>
                   </TabsContent>
                 </div>
               </Tabs>
+            </div>
+          )}
+
+          {activeTab === "seo" && (
+            <div className="mt-0 h-full flex flex-col min-h-0">
+              <ScrollArea className="h-full">
+                <div className="pr-4 pb-20 space-y-6">
+                  <SeoTraffic
+                    data={seoFromStore}
+                  />
+                </div>
+              </ScrollArea>
             </div>
           )}
 

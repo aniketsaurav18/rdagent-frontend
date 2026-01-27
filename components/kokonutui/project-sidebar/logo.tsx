@@ -18,6 +18,7 @@ export const Logo: FC<{ isCollapsed: boolean }> = ({ isCollapsed }) => {
           width={32}
           height={32}
           className="flex-shrink-0"
+          suppressHydrationWarning
         />
         {!isCollapsed && (
           <span className="text-sm font-semibold font-montserrat hover:cursor-pointer text-gray-900 dark:text-white">

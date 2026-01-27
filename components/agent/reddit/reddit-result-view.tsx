@@ -1164,7 +1164,6 @@ const ContentDetails = React.memo(function ContentDetails({
                 }}
                 agentId={agentId}
                 onSend={(markdown) => {
-                  console.log("Reply sent:", markdown);
                 }}
               />
             </div>

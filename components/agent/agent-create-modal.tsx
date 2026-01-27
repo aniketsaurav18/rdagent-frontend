@@ -48,7 +48,7 @@ import {
   Eye,
 } from "lucide-react";
 import { PlatformIcon } from "@/components/kokonutui/platform-icons";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
 import Cookies from "js-cookie";
 import { getApiUrl } from "../../lib/config";
@@ -304,16 +304,13 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
     mutationFn: generateAgentProfile,
     onSuccess: (data: any) => {
       handleInputChange("instructions", data.context);
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Agent profile generated successfully!",
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to generate agent profile. Please try again.",
-        variant: "destructive",
       });
     },
   });
@@ -322,16 +319,13 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
     mutationFn: generateExpectedOutcomes,
     onSuccess: (data: any) => {
       handleInputChange("expectations", data.expected_outcomes);
-      toast({
-        title: "Success",
+      toast.success("Success", {
         description: "Expected outcomes generated successfully!",
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Failed to generate expected outcomes. Please try again.",
-        variant: "destructive",
       });
     },
   });
@@ -398,10 +392,8 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
         if (event.data.oauth_account_id) {
           setRedditOauthAccountId(event.data.oauth_account_id);
         }
-        toast({
-          title: "Reddit Connected!",
+        toast.success("Reddit Connected!", {
           description: "Your Reddit account has been connected successfully.",
-          variant: "default",
         });
       }
     }
@@ -412,12 +404,10 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
   const handleConnectPlatform = (platform: string) => {
     const accessToken = Cookies.get("access_token");
     if (!accessToken) {
-      toast({
-        title: "Authentication Required",
+      toast.error("Authentication Required", {
         description: `Please sign in to connect your ${
           platform.charAt(0).toUpperCase() + platform.slice(1)
         } account.`,
-        variant: "destructive",
       });
       return;
     }
@@ -440,30 +430,31 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
         })
         .catch((err) => {
           setRedditLoading(false);
-          toast({
-            title: "Reddit Auth Error",
+          toast.error("Reddit Auth Error", {
             description: err.message,
-            variant: "destructive",
           });
         });
     } else {
-      toast({
-        title: "Coming Soon",
+      toast("Coming Soon", {
         description: `OAuth for ${
           platform.charAt(0).toUpperCase() + platform.slice(1)
         } is not yet implemented.`,
-        variant: "default",
       });
     }
   };
 
   const createAgentHandler = () => {
     if (!projectId) {
-      toast({
-        title: "Error",
+      toast.error("Error", {
         description: "Project ID is required",
-        variant: "destructive",
       });
+      return;
+    }
+
+    // Validate that at least one keyword is added
+    if (!agentKeywords || agentKeywords.length === 0) {
+      // Navigate back to Step 2 where keywords are managed
+      setCurrentStep(2);
       return;
     }
 
@@ -819,10 +810,8 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
                     className="h-7 w-7 text-muted-foreground hover:text-foreground"
                     onClick={() => {
                       if (!projectId) {
-                        toast({
-                          title: "Error",
+                        toast.error("Error", {
                           description: "Project ID is required",
-                          variant: "destructive",
                         });
                         return;
                       }
@@ -864,10 +853,8 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
                     className="h-7 w-7 text-muted-foreground hover:text-foreground"
                     onClick={() => {
                       if (!projectId) {
-                        toast({
-                          title: "Error",
+                        toast.error("Error", {
                           description: "Project ID is required",
-                          variant: "destructive",
                         });
                         return;
                       }
@@ -877,11 +864,9 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
                         !formData.goal ||
                         !formData.instructions
                       ) {
-                        toast({
-                          title: "Missing Information",
+                        toast.error("Missing Information", {
                           description:
                             "Please provide agent name, goal, and instructions before generating expected outcomes.",
-                          variant: "destructive",
                         });
                         return;
                       }
@@ -998,6 +983,10 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
                     Add Keyword
                   </Button>
                 </div>
+                {agentKeywords.length === 0 && (
+                  <p className="text-xs text-destructive dark:text-red-400 mt-1">Required</p>
+
+                )}
                 {agentKeywords.length > 8 && (
                   <div className="text-[11px] text-muted-foreground">
                     Showing {Math.min(agentKeywords.length, 50)} keywords
@@ -1785,6 +1774,7 @@ export const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
               onClick={goToNextStep}
               size="sm"
               className="gap-2 w-full sm:w-auto h-8"
+              disabled={currentStep === 2 && (!agentKeywords || agentKeywords.length === 0)}
             >
               Next
               <ChevronRight className="h-4 w-4" />
