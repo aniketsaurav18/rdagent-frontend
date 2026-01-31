@@ -135,9 +135,22 @@ const PerformanceMetrics = React.memo(function PerformanceMetrics({
   setActiveView: (view: string) => void;
   agentId: string;
 }) {
+  const storageKey = "reddit_analytics_window_days";
+  const [windowDays, setWindowDays] = useState(() => {
+    if (typeof window === "undefined") return 180;
+    const stored = window.localStorage.getItem(storageKey);
+    const parsed = stored ? Number(stored) : 180;
+    return Number.isFinite(parsed) ? parsed : 180;
+  });
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(storageKey, String(windowDays));
+    }
+  }, [windowDays]);
 
   // Fetch analytics data when component mounts
   useEffect(() => {
@@ -151,11 +164,14 @@ const PerformanceMetrics = React.memo(function PerformanceMetrics({
           throw new Error("Authentication required");
         }
 
-        const response = await fetch(getApiUrl(`agents/${agentId}/analytics`), {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await fetch(
+          getApiUrl(`agents/${agentId}/analytics?window_days=${windowDays}`),
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (!response.ok) {
           throw new Error("Failed to fetch analytics data");
@@ -176,7 +192,85 @@ const PerformanceMetrics = React.memo(function PerformanceMetrics({
     if (agentId) {
       fetchAnalytics();
     }
-  }, [agentId]);
+  }, [agentId, windowDays]);
+
+  const WindowSelect = () => (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-muted-foreground">Window</span>
+      <Select
+        value={String(windowDays)}
+        onValueChange={(value) => setWindowDays(Number(value))}
+      >
+        <SelectTrigger className="h-7 text-xs w-[140px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="30">Last month</SelectItem>
+          <SelectItem value="180">Last six months</SelectItem>
+          <SelectItem value="365">Last year</SelectItem>
+          <SelectItem value="730">All</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  const aggregatedTimeSeries = React.useMemo(() => {
+    const series = analyticsData?.posts?.time_series;
+    if (!series || series.length === 0) return [];
+    const bucket: "day" | "week" | "month" =
+      windowDays <= 45 ? "day" : windowDays <= 180 ? "week" : "month";
+
+    const getBucketKey = (d: Date) => {
+      const year = d.getUTCFullYear();
+      if (bucket === "day") {
+        const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+        const day = String(d.getUTCDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+      if (bucket === "week") {
+        const date = new Date(
+          Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+        );
+        const day = date.getUTCDay() || 7;
+        date.setUTCDate(date.getUTCDate() - day + 1);
+        const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+        const dateNum = String(date.getUTCDate()).padStart(2, "0");
+        return `${date.getUTCFullYear()}-${month}-${dateNum}`;
+      }
+      const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+      return `${year}-${month}-01`;
+    };
+
+    const formatLabel = (key: string) => {
+      const d = new Date(`${key}T00:00:00Z`);
+      if (bucket === "day") {
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      }
+      if (bucket === "week") {
+        return `Week of ${d.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })}`;
+      }
+      return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    };
+
+    const map = new Map<string, number>();
+    series.forEach((item: any) => {
+      const date = new Date(item.ts);
+      if (isNaN(date.getTime())) return;
+      const key = getBucketKey(date);
+      map.set(key, (map.get(key) || 0) + (item.count || 0));
+    });
+
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, count]) => ({
+        name: formatLabel(key),
+        count,
+      }));
+  }, [analyticsData, windowDays]);
+
 
   // Loading skeleton component
   const LoadingSkeleton = () => (
@@ -527,21 +621,16 @@ const PerformanceMetrics = React.memo(function PerformanceMetrics({
       </div>
 
       {/* Time Series Chart */}
-      {posts?.time_series && posts.time_series.length > 0 && (
+      {aggregatedTimeSeries.length > 0 && (
         <Card className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800">
           <CardContent className="p-3">
-            <h3 className="text-sm font-medium mb-3">Posts Over Time</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium">Posts Over Time</h3>
+              <WindowSelect />
+            </div>
             <div className="h-40">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={posts.time_series.slice(-14).map((item: any) => ({
-                    ...item,
-                    name: new Date(item.ts).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    }),
-                  }))}
-                >
+                <BarChart data={aggregatedTimeSeries.slice(-14)}>
                   <CartesianGrid
                     strokeDasharray="3 3"
                     stroke="hsl(var(--border))"
@@ -1163,8 +1252,7 @@ const ContentDetails = React.memo(function ContentDetails({
                   url: content.url,
                 }}
                 agentId={agentId}
-                onSend={(markdown) => {
-                }}
+                onSend={(markdown) => {}}
               />
             </div>
           )}
