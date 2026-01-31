@@ -3,14 +3,19 @@
 import type React from "react"
 
 import { useEffect, useRef, useState } from "react"
-import { useSelector } from "react-redux"
-import { selectOverviewByKey, selectNewsByKey } from "@/store/slices/competitorAnalysisSlice"
+import { useSelector, useDispatch } from "react-redux"
+import { useSearchParams } from "next/navigation"
+import { selectOverview, selectNews, selectYouTube, selectTwitter, selectFacebook, updateSocialMediaFromResponse } from "@/store/slices/competitorAnalysisSlice"
+import type { AppDispatch } from "@/store/store"
+import { selectUserInfo } from "@/store/slices/userSlice"
+import { selectCurrentProject } from "@/store/slices/currentProjectSlice"
 import { Tabs } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import { SocialMediaDashboard } from "@/components/social-media/social-media-dashboard"
 import {
   Building2,
   Globe,
@@ -161,9 +166,19 @@ export default function CompanyAnalysisPage({
   youtubeAnalysis,
   newsAnalysis,
 }: CompanyAnalysisPageProps) {
-  const key = `${projectId}:${companySlug ?? ""}`
-  const overviewFromStore = useSelector(selectOverviewByKey(key)) as any
-  const newsFromStore = useSelector(selectNewsByKey(key)) as any
+  const searchParams = useSearchParams()
+  const competitorUrl = searchParams.get("competitor_url") || ""
+  const dispatch = useDispatch<AppDispatch>()
+
+  // Redux selectors
+  const overviewFromStore = useSelector(selectOverview) as any
+  const newsFromStore = useSelector(selectNews) as any
+  const youtubeFromStore = useSelector(selectYouTube) as any
+  const twitterFromStore = useSelector(selectTwitter) as any
+  const facebookFromStore = useSelector(selectFacebook) as any
+  const user = useSelector(selectUserInfo) as any
+  const currentProject = useSelector(selectCurrentProject) as any
+
   const [activeTab, setActiveTab] = useState<string>("overview")
   const [activeSection, setActiveSection] = useState<string | null>(null)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
@@ -324,24 +339,24 @@ export default function CompanyAnalysisPage({
 
           {activeTab === "overview" && (
             <div className="mt-0 flex-1 min-h-0 flex flex-col">
-            {(() => {
-              const overviewSample: CompanyOverviewData = {
-                mission_statement:
+              {(() => {
+                const overviewSample: CompanyOverviewData = {
+                  mission_statement:
                     "To empower businesses with cutting-edge mobile device management solutions that enhance productivity and security.",
-                vision:
+                  vision:
                     "To be the global leader in unified endpoint management, creating a seamlessly connected and secure digital workplace.",
                   core_values: ["Innovation", "Security", "Customer Success", "Integrity", "Excellence"],
-                founding_history:
+                  founding_history:
                     "Founded in 2013 by a team of mobile security experts who recognized the growing need for comprehensive device management solutions in the enterprise market.",
-                key_milestones: [
+                  key_milestones: [
                     "2013: Company founded with initial focus on iOS device management",
                     "2015: Expanded to Android and Windows device support",
                     "2017: Launched unified endpoint management platform",
                     "2019: Achieved SOC 2 Type II compliance",
                     "2021: Reached 10,000+ enterprise customers globally",
                     "2023: Introduced AI-powered security analytics",
-                ],
-                organizational_structure:
+                  ],
+                  organizational_structure:
                     "Hexnode operates as a global organization with development centers in San Francisco and London, serving customers across 100+ countries.",
                   leadership_team: [
                     "John Smith - CEO & Co-founder",
@@ -350,11 +365,11 @@ export default function CompanyAnalysisPage({
                     "Lisa Rodriguez - VP of Sales",
                     "David Kim - VP of Marketing",
                   ],
-                business_model:
+                  business_model:
                     "SaaS-based subscription model with tiered pricing based on device count and feature requirements.",
-                value_proposition:
+                  value_proposition:
                     "Comprehensive mobile device management with industry-leading security, intuitive administration, and seamless user experience.",
-                target_market:
+                  target_market:
                     "Mid-market to enterprise organizations across healthcare, education, retail, and financial services sectors.",
                   customer_segments: [
                     "Healthcare Organizations",
@@ -363,16 +378,16 @@ export default function CompanyAnalysisPage({
                     "Financial Services",
                     "Government Agencies",
                   ],
-                competitive_positioning:
+                  competitive_positioning:
                     "Positioned as a comprehensive, user-friendly alternative to complex enterprise mobility management solutions.",
-                differentiators: [
+                  differentiators: [
                     "Intuitive user interface",
                     "Comprehensive device support",
                     "Advanced security features",
                     "Competitive pricing",
                     "Excellent customer support",
-                ],
-                recent_achievements: [
+                  ],
+                  recent_achievements: [
                     "Named Leader in Gartner Magic Quadrant for UEM",
                     "Achieved 99.9% uptime SLA for 12 consecutive months",
                     "Expanded to 15 new international markets",
@@ -384,15 +399,15 @@ export default function CompanyAnalysisPage({
                     yoy_growth: "45%",
                     customers: "10,000+",
                   },
-                awards_and_recognition: [
+                  awards_and_recognition: [
                     "Gartner Magic Quadrant Leader 2023",
                     "Best Mobile Device Management Solution - TechCrunch Awards",
                     "Top 50 SaaS Companies to Watch - Forbes",
-                ],
-                locations: ["San Francisco, CA, USA", "London, UK"],
-              }
+                  ],
+                  locations: ["San Francisco, CA, USA", "London, UK"],
+                }
 
-              const ov = (overviewFromStore as CompanyOverviewData) ?? overviewProp ?? overviewSample
+                const ov = (overviewFromStore as CompanyOverviewData) ?? overviewProp ?? overviewSample
 
                 const sectionIcons: Record<string, React.ReactElement> = {
                   mission: <Target className="h-4 w-4 text-gray-500 dark:text-gray-400" />,
@@ -412,233 +427,233 @@ export default function CompanyAnalysisPage({
                   "growth-metrics": <BarChart2 className="h-4 w-4 text-gray-500 dark:text-gray-400" />,
                   awards: <Award className="h-4 w-4 text-gray-500 dark:text-gray-400" />,
                   locations: <MapPin className="h-4 w-4 text-gray-500 dark:text-gray-400" />,
-              }
+                }
 
-              const sections = [
-                ov.mission_statement && {
-                  id: "mission",
-                  title: "Mission",
+                const sections = [
+                  ov.mission_statement && {
+                    id: "mission",
+                    title: "Mission",
                     content: <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{ov.mission_statement}</p>,
-                },
-                ov.vision && {
-                  id: "vision",
-                  title: "Vision",
+                  },
+                  ov.vision && {
+                    id: "vision",
+                    title: "Vision",
                     content: <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{ov.vision}</p>,
-                },
+                  },
                   ov.core_values &&
-                    ov.core_values.length > 0 && {
-                  id: "core-values",
-                  title: "Core Values",
-                  content: (
-                        <div className="flex flex-wrap gap-2">
-                      {ov.core_values.map((v: string) => (
-                            <span
-                              key={v}
-                               className="inline-flex items-center rounded bg-gray-100 dark:bg-[#0F0F0F] px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300"
-                            >
-                              {v}
-                            </span>
-                          ))}
-                        </div>
-                  ),
-                },
-                ov.founding_history && {
-                  id: "founding-history",
-                  title: "Founding History",
+                  ov.core_values.length > 0 && {
+                    id: "core-values",
+                    title: "Core Values",
+                    content: (
+                      <div className="flex flex-wrap gap-2">
+                        {ov.core_values.map((v: string) => (
+                          <span
+                            key={v}
+                            className="inline-flex items-center rounded bg-gray-100 dark:bg-[#0F0F0F] px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-300"
+                          >
+                            {v}
+                          </span>
+                        ))}
+                      </div>
+                    ),
+                  },
+                  ov.founding_history && {
+                    id: "founding-history",
+                    title: "Founding History",
                     content: <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{ov.founding_history}</p>,
-                },
+                  },
                   ov.key_milestones &&
-                    ov.key_milestones.length > 0 && {
-                  id: "key-milestones",
-                  title: "Key Milestones",
-                  content: (
-                        <div className="space-y-3">
-                      {ov.key_milestones.map((m: string) => (
-                            <div key={m} className="flex items-start gap-3">
-                              <div className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded bg-gray-400 dark:bg-gray-500" />
-                              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{m}</p>
-                            </div>
-                      ))}
-                        </div>
-                  ),
-                },
-                ov.organizational_structure && {
-                  id: "organizational-structure",
-                  title: "Organizational Structure",
-                  content: (
+                  ov.key_milestones.length > 0 && {
+                    id: "key-milestones",
+                    title: "Key Milestones",
+                    content: (
+                      <div className="space-y-3">
+                        {ov.key_milestones.map((m: string) => (
+                          <div key={m} className="flex items-start gap-3">
+                            <div className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded bg-gray-400 dark:bg-gray-500" />
+                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{m}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ),
+                  },
+                  ov.organizational_structure && {
+                    id: "organizational-structure",
+                    title: "Organizational Structure",
+                    content: (
                       <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{ov.organizational_structure}</p>
-                  ),
-                },
+                    ),
+                  },
                   ov.leadership_team &&
-                    ov.leadership_team.length > 0 && {
-                  id: "leadership-team",
-                  title: "Leadership Team",
-                  content: (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                      {ov.leadership_team.map((l: string) => (
-                              <div
-                                key={l}
-                                className="flex items-center gap-3 rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent p-3"
-                              >
-                              <div className="flex h-8 w-8 items-center justify-center rounded bg-gray-100 dark:bg-gray-800">
-                                <Users className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                              </div>
-                              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{l}</span>
+                  ov.leadership_team.length > 0 && {
+                    id: "leadership-team",
+                    title: "Leadership Team",
+                    content: (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {ov.leadership_team.map((l: string) => (
+                          <div
+                            key={l}
+                            className="flex items-center gap-3 rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent p-3"
+                          >
+                            <div className="flex h-8 w-8 items-center justify-center rounded bg-gray-100 dark:bg-gray-800">
+                              <Users className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                             </div>
-                          ))}
-                        </div>
-                  ),
-                },
-                ov.business_model && {
-                  id: "business-model",
-                  title: "Business Model",
+                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{l}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ),
+                  },
+                  ov.business_model && {
+                    id: "business-model",
+                    title: "Business Model",
                     content: <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{ov.business_model}</p>,
-                },
-                ov.value_proposition && {
-                  id: "value-proposition",
-                  title: "Value Proposition",
+                  },
+                  ov.value_proposition && {
+                    id: "value-proposition",
+                    title: "Value Proposition",
                     content: <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{ov.value_proposition}</p>,
-                },
-                ov.target_market && {
-                  id: "target-market",
-                  title: "Target Market",
+                  },
+                  ov.target_market && {
+                    id: "target-market",
+                    title: "Target Market",
                     content: <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{ov.target_market}</p>,
-                },
+                  },
                   ov.customer_segments &&
-                    ov.customer_segments.length > 0 && {
-                  id: "customer-segments",
-                  title: "Customer Segments",
-                  content: (
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {ov.customer_segments.map((s: string) => (
-                              <div
-                                key={s}
-                                className="rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent p-3 text-center"
-                              >
-                              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{s}</span>
-                            </div>
-                          ))}
-                        </div>
-                  ),
-                },
-                ov.competitive_positioning && {
-                  id: "competitive-positioning",
-                  title: "Competitive Positioning",
-                  content: (
+                  ov.customer_segments.length > 0 && {
+                    id: "customer-segments",
+                    title: "Customer Segments",
+                    content: (
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {ov.customer_segments.map((s: string) => (
+                          <div
+                            key={s}
+                            className="rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent p-3 text-center"
+                          >
+                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{s}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ),
+                  },
+                  ov.competitive_positioning && {
+                    id: "competitive-positioning",
+                    title: "Competitive Positioning",
+                    content: (
                       <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{ov.competitive_positioning}</p>
-                  ),
-                },
+                    ),
+                  },
                   ov.differentiators &&
-                    ov.differentiators.length > 0 && {
-                  id: "differentiators",
-                  title: "Differentiators",
-                  content: (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                      {ov.differentiators.map((d: string) => (
-                              <div
-                                key={d}
-                                className="flex items-center gap-3 rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent p-3"
-                              >
-                              <Sparkles className="h-4 w-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
-                              <span className="text-sm text-gray-700 dark:text-gray-300">{d}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ),
-                    },
+                  ov.differentiators.length > 0 && {
+                    id: "differentiators",
+                    title: "Differentiators",
+                    content: (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {ov.differentiators.map((d: string) => (
+                          <div
+                            key={d}
+                            className="flex items-center gap-3 rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent p-3"
+                          >
+                            <Sparkles className="h-4 w-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">{d}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ),
+                  },
                   ov.recent_achievements &&
-                    ov.recent_achievements.length > 0 && {
-                  id: "recent-achievements",
-                  title: "Recent Achievements",
-                  content: (
-                               <div className="space-y-3">
-                      {ov.recent_achievements.map((a: string) => (
-                            <div key={a} className="flex items-start gap-3">
-                              <Award className="mt-1 h-4 w-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
-                              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{a}</p>
-                            </div>
-                      ))}
-                        </div>
-                  ),
-                },
+                  ov.recent_achievements.length > 0 && {
+                    id: "recent-achievements",
+                    title: "Recent Achievements",
+                    content: (
+                      <div className="space-y-3">
+                        {ov.recent_achievements.map((a: string) => (
+                          <div key={a} className="flex items-start gap-3">
+                            <Award className="mt-1 h-4 w-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
+                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{a}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ),
+                  },
                   ov.growth_metrics &&
-                    Object.values(ov.growth_metrics).some(Boolean) && {
-                  id: "growth-metrics",
-                  title: "Growth Metrics",
-                  content: (
-                        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                          {[
-                            { label: "Revenue", value: ov.growth_metrics?.revenue, icon: DollarSign },
-                            { label: "ARR", value: ov.growth_metrics?.arr, icon: TrendingUp },
-                            { label: "YoY Growth", value: ov.growth_metrics?.yoy_growth, icon: BarChart2 },
-                            { label: "Customers", value: ov.growth_metrics?.customers, icon: Users },
-                          ].map(({ label, value, icon: Icon }) => (
-                            <div
-                              key={label}
-                              className="rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent p-4 text-center"
-                            >
-                              <Icon className="mx-auto mb-2 h-5 w-5 text-gray-500 dark:text-gray-400" />
-                              <div className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">{label}</div>
-                              <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                {value || "—"}
-                              </div>
-                        </div>
-                      ))}
-                    </div>
-                  ),
-                },
+                  Object.values(ov.growth_metrics).some(Boolean) && {
+                    id: "growth-metrics",
+                    title: "Growth Metrics",
+                    content: (
+                      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                        {[
+                          { label: "Revenue", value: ov.growth_metrics?.revenue, icon: DollarSign },
+                          { label: "ARR", value: ov.growth_metrics?.arr, icon: TrendingUp },
+                          { label: "YoY Growth", value: ov.growth_metrics?.yoy_growth, icon: BarChart2 },
+                          { label: "Customers", value: ov.growth_metrics?.customers, icon: Users },
+                        ].map(({ label, value, icon: Icon }) => (
+                          <div
+                            key={label}
+                            className="rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent p-4 text-center"
+                          >
+                            <Icon className="mx-auto mb-2 h-5 w-5 text-gray-500 dark:text-gray-400" />
+                            <div className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">{label}</div>
+                            <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                              {value || "—"}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ),
+                  },
                   ov.awards_and_recognition &&
-                    ov.awards_and_recognition.length > 0 && {
-                  id: "awards",
-                  title: "Awards & Recognition",
-                  content: (
-                         <div className="space-y-3">
-                      {ov.awards_and_recognition.map((aw: string) => (
-                            <div key={aw} className="flex items-start gap-3">
-                              <Star className="mt-1 h-4 w-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
-                              <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{aw}</p>
-                            </div>
-                      ))}
-                        </div>
-                  ),
-                },
+                  ov.awards_and_recognition.length > 0 && {
+                    id: "awards",
+                    title: "Awards & Recognition",
+                    content: (
+                      <div className="space-y-3">
+                        {ov.awards_and_recognition.map((aw: string) => (
+                          <div key={aw} className="flex items-start gap-3">
+                            <Star className="mt-1 h-4 w-4 flex-shrink-0 text-gray-600 dark:text-gray-400" />
+                            <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{aw}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ),
+                  },
                   ov.locations &&
-                    ov.locations.length > 0 && {
-                  id: "locations",
-                  title: "Locations",
-                  content: (
-                        <div className="flex flex-wrap gap-2">
-                      {ov.locations.map((loc: string) => (
-                              <div
-                                key={loc}
-                                className="flex items-center gap-2 rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent px-3 py-2"
-                              >
-                              <MapPin className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                              <span className="text-sm text-gray-700 dark:text-gray-300">{loc}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ),
-                    },
+                  ov.locations.length > 0 && {
+                    id: "locations",
+                    title: "Locations",
+                    content: (
+                      <div className="flex flex-wrap gap-2">
+                        {ov.locations.map((loc: string) => (
+                          <div
+                            key={loc}
+                            className="flex items-center gap-2 rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent px-3 py-2"
+                          >
+                            <MapPin className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                            <span className="text-sm text-gray-700 dark:text-gray-300">{loc}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ),
+                  },
                 ].filter(Boolean) as { id: string; title: string; content: React.ReactElement }[]
 
-              return (
+                return (
                   <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 min-h-0 flex-1">
                     <div className="lg:col-span-1 order-2 lg:order-2">
                       <div className="sticky top-6">
                         <div className="rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent">
                           <div className="border-b border-gray-200 dark:border-[#1A1A1A] px-4 py-3">
                             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">Contents</h3>
-                      </div>
+                          </div>
                           <nav className="p-2">
                             <div className="space-y-1">
-                        {sections.map((s) => (
-                            <a
+                              {sections.map((s) => (
+                                <a
                                   key={s.id}
-                              href={`#${s.id}`}
-                              onClick={(e) => handleTocClick(e, s.id)}
-                              className={cn(
-                                   "flex items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-[#101010]",
+                                  href={`#${s.id}`}
+                                  onClick={(e) => handleTocClick(e, s.id)}
+                                  className={cn(
+                                    "flex items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors hover:bg-gray-100 dark:hover:bg-[#101010]",
                                     activeSection === s.id
                                       ? "bg-gray-100 dark:bg-[#0F0F0F] font-medium text-gray-900 dark:text-gray-100"
                                       : "text-gray-600 dark:text-gray-400",
@@ -649,69 +664,77 @@ export default function CompanyAnalysisPage({
                                 </a>
                               ))}
                             </div>
-                    </nav>
-                  </div>
+                          </nav>
                         </div>
-                                </div>
+                      </div>
+                    </div>
 
                     <div className="lg:col-span-3 order-1 lg:order-1 flex flex-col min-h-0 flex-1 overflow-hidden">
                       <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0">
                         <div className="space-y-2 pr-4 pb-20">
                           {sections.map((s) => (
-                      <section
+                            <section
                               key={s.id}
                               id={s.id}
                               ref={(ref) => addSectionRef(s.id, ref)}
                               className="scroll-mt-6"
                             >
-                           <div className="rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent p-6">
+                              <div className="rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent p-6">
                                 <h3 className="mb-4 flex items-center gap-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
                                   {sectionIcons[s.id]}
                                   {s.title}
                                 </h3>
                                 {s.content}
-                                </div>
+                              </div>
                             </section>
                           ))}
-                              </div>
-                    </ScrollArea>
-                  </div>
-                      </div>
-              )
-            })()}
                         </div>
+                      </ScrollArea>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
           )}
 
           {activeTab === "website" && (
             <div className="mt-0 h-full flex flex-col min-h-0">
               <ScrollArea className="flex-1 min-h-0">
                 <div className="pr-4 pb-20">
-              <div className="rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent">
+                  <div className="rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent">
                     <div className="p-12 text-center">
                       <Globe className="mx-auto mb-4 h-12 w-12 text-gray-400 dark:text-gray-500" />
                       <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">Website Analysis</h3>
                       <p className="text-gray-600 dark:text-gray-400">Website analysis content will be displayed here.</p>
-                                  </div>
-                                  </div>
-                                </div>
+                    </div>
+                  </div>
+                </div>
               </ScrollArea>
-                                    </div>
+            </div>
           )}
 
           {activeTab === "social" && (
             <div className="mt-0 h-full flex flex-col min-h-0">
               <ScrollArea className="flex-1 min-h-0">
                 <div className="pr-4 pb-20">
-                  <div className="rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent">
-                    <div className="p-12 text-center">
-                      <Megaphone className="mx-auto mb-4 h-12 w-12 text-gray-400 dark:text-gray-500" />
-                      <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">Social Media Analysis</h3>
-                      <p className="text-gray-600 dark:text-gray-400">Social media analysis content will be displayed here.</p>
-                                  </div>
-                                    </div>
-                      </div>
-                    </ScrollArea>
-                  </div>
+                  <SocialMediaDashboard
+                    youtubeData={youtubeFromStore}
+                    twitterData={twitterFromStore}
+                    facebookData={facebookFromStore}
+                    projectId={projectId}
+                    userId={user?.id}
+                    companyUrl={competitorUrl}
+                    onLinksUpdated={async (data) => {
+                      // Update Redux store with social media analysis from the response
+                      if (data) {
+                        dispatch(updateSocialMediaFromResponse({ response: data }))
+                      }
+                      console.log("Social links updated:", data)
+                    }}
+                  />
+                </div>
+              </ScrollArea>
+            </div>
           )}
 
           {activeTab === "news" && (
@@ -727,10 +750,10 @@ export default function CompanyAnalysisPage({
                           <p className="mt-2 text-gray-700 dark:text-gray-300 leading-relaxed">
                             {(newsFromStore?.summary ?? newsAnalysis ?? SAMPLE_NEWS).summary}
                           </p>
-                          </div>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
 
                   <Card className="rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent">
                     <CardContent className="p-6">
@@ -741,19 +764,19 @@ export default function CompanyAnalysisPage({
                             <div className="flex items-center justify-between">
                               <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{t.name}</span>
                               <Badge variant="outline" className="text-[10px]">{t.evidence_titles.length} refs</Badge>
-                          </div>
+                            </div>
                             <ul className="mt-2 list-disc pl-5 text-xs text-gray-700 dark:text-gray-300 space-y-1">
-                              {t.evidence_titles.slice(0,3).map((title: string) => (
+                              {t.evidence_titles.slice(0, 3).map((title: string) => (
                                 <li key={title}>{title}</li>
                               ))}
                             </ul>
                           </div>
                         ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </CardContent>
+                  </Card>
 
-                  
+
 
                   <div className="grid gap-4 lg:grid-cols-2">
                     <Card className="rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent">
@@ -762,10 +785,10 @@ export default function CompanyAnalysisPage({
                         <ul className="list-disc pl-5 text-xs text-gray-700 dark:text-gray-300 space-y-1">
                           {(newsFromStore?.opportunities ?? (newsAnalysis ?? SAMPLE_NEWS).opportunities).map((o: string) => (
                             <li key={o}>{o}</li>
-                              ))}
-                            </ul>
-                </CardContent>
-              </Card>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
 
                     <Card className="rounded border border-gray-200 dark:border-[#1A1A1A] bg-transparent dark:bg-transparent">
                       <CardContent className="p-6">
@@ -773,13 +796,13 @@ export default function CompanyAnalysisPage({
                         <ul className="list-disc pl-5 text-xs text-gray-700 dark:text-gray-300 space-y-1">
                           {(newsFromStore?.risks ?? (newsAnalysis ?? SAMPLE_NEWS).risks).map((r: string) => (
                             <li key={r}>{r}</li>
-                              ))}
-                            </ul>
-                </CardContent>
-              </Card>
-            </div>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
                   </div>
-                </ScrollArea>
+                </div>
+              </ScrollArea>
             </div>
           )}
         </Tabs>

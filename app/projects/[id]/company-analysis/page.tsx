@@ -33,6 +33,9 @@ import {
 import { YouTubeAnalysis } from "@/components/social-media/youtube-analysis"
 import { TwitterAnalysis } from "@/components/social-media/twitter-analysis"
 import { FacebookAnalysis } from "@/components/social-media/facebook-analysis"
+import { AddSocialLinksDialog } from "@/components/social-media/add-social-link-dialog"
+import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
 import { OverviewCard } from "@/components/overview/overview-card"
 import { MetricsDashboard } from "@/components/overview/metrics-dashboard"
 import { TimelineView } from "@/components/overview/timeline-view"
@@ -46,7 +49,7 @@ import Layout from "@/components/kokonutui/layout"
 import { useDispatch, useSelector } from "react-redux"
 import type { RootState } from "@/store/store";
 import SeoTraffic from "@/components/website/seo-traffic"
-import { selectSEO, selectFeatures, selectYouTube, loadCompetitorAnalysis, selectTwitter, selectFacebook, selectNews, selectPricing, selectOverview } from "@/store/slices/competitorAnalysisSlice"
+import { selectSEO, selectFeatures, selectYouTube, loadCompetitorAnalysis, selectTwitter, selectFacebook, selectNews, selectPricing, selectOverview, updateSocialMediaFromResponse } from "@/store/slices/competitorAnalysisSlice"
 import { useParams, useSearchParams } from "next/navigation"
 import type { AppDispatch } from "@/store/store"
 
@@ -135,6 +138,9 @@ export default function CompanyAnalysisPage() {
   const seoFromStore = useSelector(selectSEO) as any
   const [activeTab, setActiveTab] = useState<string>("overview")
   const [activeSection, setActiveSection] = useState<string | null>(null)
+  const [showAddLinksDialog, setShowAddLinksDialog] = useState(false)
+  const [activeSocialTab, setActiveSocialTab] = useState<string>("youtube")
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null)
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({})
   const scrollAreaRef = useRef<HTMLDivElement | null>(null)
 
@@ -543,7 +549,7 @@ export default function CompanyAnalysisPage() {
 
           {activeTab === "social" && (
             <div className="mt-0 flex-1 min-h-0 flex flex-col">
-              <Tabs defaultValue="youtube" className="flex-1 min-h-0 flex flex-col">
+              <Tabs value={activeSocialTab} onValueChange={setActiveSocialTab} className="flex-1 min-h-0 flex flex-col">
                 <div className="flex justify-center mb-4">
                   <TabsList className="inline-flex h-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 p-1 text-gray-500 dark:text-gray-400">
                     <TabsTrigger
@@ -574,7 +580,29 @@ export default function CompanyAnalysisPage() {
                   <TabsContent value="youtube" className="mt-0 h-full">
                     <ScrollArea className="h-full">
                       <div className="px-4 pb-4">
-                        <YouTubeAnalysis data={youtubeAnalysis || undefined} />
+                        {youtubeAnalysis ? (
+                          <YouTubeAnalysis data={youtubeAnalysis} />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-12">
+                            <Youtube className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
+                            <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">No YouTube Data</h3>
+                            <p className="mb-4 text-gray-600 dark:text-gray-400">YouTube analysis data is not available.</p>
+                            {projectId && userId && (
+                              <Button
+                                variant="default"
+                                onClick={() => {
+                                  setActiveSocialTab("youtube")
+                                  setSelectedPlatform("youtube")
+                                  setShowAddLinksDialog(true)
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <Plus className="h-4 w-4" />
+                                Add YouTube Link Manually
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </ScrollArea>
                   </TabsContent>
@@ -582,7 +610,29 @@ export default function CompanyAnalysisPage() {
                   <TabsContent value="twitter" className="mt-0 h-full">
                     <ScrollArea className="h-full">
                       <div className="px-4 pb-4">
-                        <TwitterAnalysis data={twitterAnalysis || undefined} />
+                        {twitterAnalysis ? (
+                          <TwitterAnalysis data={twitterAnalysis} />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-12">
+                            <Twitter className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
+                            <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">No Twitter Data</h3>
+                            <p className="mb-4 text-gray-600 dark:text-gray-400">Twitter analysis data is not available.</p>
+                            {projectId && userId && (
+                              <Button
+                                variant="default"
+                                onClick={() => {
+                                  setActiveSocialTab("twitter")
+                                  setSelectedPlatform("twitter")
+                                  setShowAddLinksDialog(true)
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <Plus className="h-4 w-4" />
+                                Add Twitter/X Link Manually
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </ScrollArea>
                   </TabsContent>
@@ -590,12 +640,70 @@ export default function CompanyAnalysisPage() {
                   <TabsContent value="facebook" className="mt-0 h-full">
                     <ScrollArea className="h-full">
                       <div className="px-4 pb-4">
-                        <FacebookAnalysis data={facebookAnalysis || undefined} />
+                        {facebookAnalysis ? (
+                          <FacebookAnalysis data={facebookAnalysis} />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-12">
+                            <Facebook className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
+                            <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">No Facebook Data</h3>
+                            <p className="mb-4 text-gray-600 dark:text-gray-400">Facebook analysis data is not available.</p>
+                            {projectId && userId && (
+                              <Button
+                                variant="default"
+                                onClick={() => {
+                                  setActiveSocialTab("facebook")
+                                  setSelectedPlatform("facebook")
+                                  setShowAddLinksDialog(true)
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <Plus className="h-4 w-4" />
+                                Add Facebook Link Manually
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </ScrollArea>
                   </TabsContent>
                 </div>
               </Tabs>
+              
+              {/* Add Social Links Dialog */}
+              <AddSocialLinksDialog
+                open={showAddLinksDialog}
+                onOpenChange={(open) => {
+                  setShowAddLinksDialog(open)
+                  if (!open) {
+                    setSelectedPlatform(null)
+                  }
+                }}
+                projectId={projectId}
+                userId={Number(userId)}
+                companyUrl={competitorUrl}
+                platforms={selectedPlatform ? [selectedPlatform] : ["youtube", "twitter", "facebook"]}
+                onSuccess={async (data) => {
+                  // Update Redux store with social media analysis from the response
+                  if (data) {
+                    dispatch(updateSocialMediaFromResponse({ response: data }))
+                  }
+                  // Also refresh competitor analysis to get the latest data
+                  if (projectId && userId && (ourUrl || competitorUrl)) {
+                    try {
+                      await dispatch(
+                        loadCompetitorAnalysis({
+                          projectId,
+                          ourUrl: ourUrl || undefined,
+                          competitorUrl: competitorUrl || undefined,
+                          userId: Number(userId),
+                        })
+                      ).unwrap()
+                    } catch (error) {
+                      console.error("Failed to refresh competitor analysis:", error)
+                    }
+                  }
+                }}
+              />
             </div>
           )}
 
