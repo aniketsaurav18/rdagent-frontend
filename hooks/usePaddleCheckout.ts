@@ -6,7 +6,6 @@ export function usePaddleCheckout() {
 
   useEffect(() => {
     initializePaddle({
-      environment: "sandbox",
       token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
     }).then((paddle) => {
       paddleRef.current = paddle ?? null;
@@ -25,7 +24,7 @@ export function usePaddleCheckout() {
         allowLogout: false,
         theme: "light",
         variant: "one-page",
-        successUrl: `https://beta-zooptics.com/payment/success?txn_id=${data.txn_id}`,
+        successUrl: `https://zooptics.com/payment/success?txn_id=${data.txn_id}`,
       },
     };
 
