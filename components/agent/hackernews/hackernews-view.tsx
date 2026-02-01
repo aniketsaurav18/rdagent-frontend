@@ -52,7 +52,19 @@ import {
   Search,
   XIcon,
   SlidersHorizontal,
+  Users,
 } from "lucide-react";
+import Cookies from "js-cookie";
+import { getApiUrl } from "@/lib/config";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 // HN Icon Component
 const HNIcon = ({ className }: { className?: string }) => (
@@ -67,6 +79,668 @@ const HNIcon = ({ className }: { className?: string }) => (
     />
   </svg>
 );
+
+// Performance Metrics Component
+const PerformanceMetrics = React.memo(function PerformanceMetrics({
+  setActiveView,
+  agentId,
+}: {
+  setActiveView: (view: "content" | "performance" | "config") => void;
+  agentId: string;
+}) {
+  const storageKey = "hn_analytics_window_days";
+  const [windowDays, setWindowDays] = useState(() => {
+    if (typeof window === "undefined") return 180;
+    const stored = window.localStorage.getItem(storageKey);
+    const parsed = stored ? Number(stored) : 180;
+    return Number.isFinite(parsed) ? parsed : 180;
+  });
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(storageKey, String(windowDays));
+    }
+  }, [windowDays]);
+
+  React.useEffect(() => {
+    const fetchAnalytics = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const token = Cookies.get("access_token");
+        if (!token) {
+          throw new Error("Authentication required");
+        }
+        const response = await fetch(
+          getApiUrl(`agents/${agentId}/analytics?window_days=${windowDays}`),
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch analytics data");
+        }
+        const data = await response.json();
+        setAnalyticsData(data);
+      } catch (err) {
+        console.error("Error fetching analytics:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to load analytics"
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (agentId) {
+      fetchAnalytics();
+    }
+  }, [agentId, windowDays]);
+
+  const WindowSelect = () => (
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-muted-foreground">Window</span>
+      <Select
+        value={String(windowDays)}
+        onValueChange={(value) => setWindowDays(Number(value))}
+      >
+        <SelectTrigger className="h-7 text-xs w-[140px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="30">Last month</SelectItem>
+          <SelectItem value="180">Last six months</SelectItem>
+          <SelectItem value="365">Last year</SelectItem>
+          <SelectItem value="730">All</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  const aggregatedTimeSeries = React.useMemo(() => {
+    const series = analyticsData?.stories?.time_series;
+    if (!series || series.length === 0) return [];
+    const bucket: "day" | "week" | "month" =
+      windowDays <= 45 ? "day" : windowDays <= 180 ? "week" : "month";
+
+    const getBucketKey = (d: Date) => {
+      const year = d.getUTCFullYear();
+      if (bucket === "day") {
+        const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+        const day = String(d.getUTCDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      }
+      if (bucket === "week") {
+        const date = new Date(
+          Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+        );
+        const day = date.getUTCDay() || 7;
+        date.setUTCDate(date.getUTCDate() - day + 1);
+        const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+        const dateNum = String(date.getUTCDate()).padStart(2, "0");
+        return `${date.getUTCFullYear()}-${month}-${dateNum}`;
+      }
+      const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+      return `${year}-${month}-01`;
+    };
+
+    const formatLabel = (key: string) => {
+      const d = new Date(`${key}T00:00:00Z`);
+      if (bucket === "day") {
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      }
+      if (bucket === "week") {
+        return `Week of ${d.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        })}`;
+      }
+      return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+    };
+
+    const map = new Map<string, number>();
+    series.forEach((item: any) => {
+      const date = new Date(item.ts);
+      if (isNaN(date.getTime())) return;
+      const key = getBucketKey(date);
+      map.set(key, (map.get(key) || 0) + (item.count || 0));
+    });
+
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, count]) => ({
+        name: formatLabel(key),
+        count,
+      }));
+  }, [analyticsData, windowDays]);
+
+
+  const LoadingSkeleton = () => (
+    <div className="p-3 space-y-4 overflow-y-auto">
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-7 w-24" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {[1, 2, 3].map((i) => (
+          <Card
+            key={i}
+            className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800"
+          >
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-6 w-12" />
+                </div>
+                <Skeleton className="h-8 w-8 rounded-full" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {[1, 2].map((i) => (
+          <Card
+            key={i}
+            className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800"
+          >
+            <CardContent className="p-3">
+              <Skeleton className="h-4 w-24 mb-3" />
+              <div className="space-y-2">
+                {[1, 2, 3].map((j) => (
+                  <div key={j} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-3 w-10" />
+                    </div>
+                    <Skeleton className="h-2 w-full" />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Card className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800">
+        <CardContent className="p-3">
+          <Skeleton className="h-4 w-28 mb-3" />
+          <div className="h-40 flex items-end justify-between gap-1">
+            {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+              <div key={i} className="flex flex-col items-center">
+                <Skeleton className="w-8 h-32" />
+                <Skeleton className="h-3 w-4 mt-1" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  if (error) {
+    return (
+      <div className="p-3 space-y-4 overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">Performance Metrics</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => setActiveView("content")}
+          >
+            <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+            Back to Content
+          </Button>
+        </div>
+        <Card className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800">
+          <CardContent className="p-6 text-center">
+            <div className="text-red-500 mb-2">
+              <XIcon className="h-8 w-8 mx-auto" />
+            </div>
+            <h3 className="text-sm font-medium mb-1">
+              Failed to Load Analytics
+            </h3>
+            <p className="text-xs text-muted-foreground mb-3">{error}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.reload()}
+            >
+              Try Again
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return <LoadingSkeleton />;
+  }
+
+  if (!analyticsData) {
+    return (
+      <div className="p-3 space-y-4 overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-semibold">Performance Metrics</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => setActiveView("content")}
+          >
+            <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+            Back to Content
+          </Button>
+        </div>
+        <Card className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800">
+          <CardContent className="p-6 text-center">
+            <div className="text-muted-foreground mb-2">
+              <BarChart2 className="h-8 w-8 mx-auto" />
+            </div>
+            <h3 className="text-sm font-medium mb-1">No Analytics Data</h3>
+            <p className="text-xs text-muted-foreground">
+              Analytics data is not available for this agent yet.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const { runs, stories, comments, per_run } = analyticsData;
+  const engagement = stories?.engagement;
+  const relevance = stories?.relevance;
+  const topStories = stories?.top_stories;
+  const scoreRanges = stories?.by_score_range || [];
+  const timeSeries = stories?.time_series || [];
+
+  const successRate =
+    runs?.total > 0 ? Math.round((runs.completed / runs.total) * 100) : 0;
+  const avgStoriesPerRun = per_run?.stories_per_run?.avg || 0;
+  const avgRelevance = relevance?.avg ? Math.round(relevance.avg * 100) : 0;
+
+  return (
+    <div className="p-3 space-y-4 overflow-y-auto">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-semibold">Performance Metrics</h2>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs"
+          onClick={() => setActiveView("content")}
+        >
+          <MessageSquare className="h-3.5 w-3.5 mr-1.5" />
+          Back to Content
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Card className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Total Stories</p>
+                <p className="text-xl font-bold">
+                  {(stories?.total_distinct || 0).toLocaleString()}
+                </p>
+              </div>
+              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-full">
+                <MessageSquare className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Success Rate</p>
+                <p className="text-xl font-bold">{successRate}%</p>
+              </div>
+              <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-full">
+                <Users className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Avg Stories/Run</p>
+                <p className="text-xl font-bold">
+                  {avgStoriesPerRun.toLocaleString()}
+                </p>
+              </div>
+              <div className="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-full">
+                <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <Card className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800">
+          <CardContent className="p-3">
+            <h3 className="text-sm font-medium mb-3">Engagement Metrics</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Avg Score</span>
+                <span className="text-sm font-medium">
+                  {typeof engagement?.score?.avg === "number"
+                    ? engagement.score.avg.toFixed(1)
+                    : 0}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  Avg Comments
+                </span>
+                <span className="text-sm font-medium">
+                  {typeof engagement?.comments?.avg === "number"
+                    ? engagement.comments.avg.toFixed(1)
+                    : 0}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Max Score</span>
+                <span className="text-sm font-medium">
+                  {(engagement?.score?.max || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  Max Comments
+                </span>
+                <span className="text-sm font-medium">
+                  {(engagement?.comments?.max || 0).toLocaleString()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  Total Comments
+                </span>
+                <span className="text-sm font-medium">
+                  {(comments?.total_distinct || 0).toLocaleString()}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800">
+          <CardContent className="p-3">
+            <h3 className="text-sm font-medium mb-3">Relevance Analysis</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  Avg Relevance
+                </span>
+                <span className="text-sm font-medium">{avgRelevance}%</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  Min Relevance
+                </span>
+                <span className="text-sm font-medium">
+                  {relevance?.min ? Math.round(relevance.min * 100) : 0}%
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">
+                  Max Relevance
+                </span>
+                <span className="text-sm font-medium">
+                  {relevance?.max ? Math.round(relevance.max * 100) : 0}%
+                </span>
+              </div>
+            </div>
+            {relevance?.histogram && relevance.histogram.length > 0 && (
+              <div className="pt-3 mt-3 border-t border-gray-200 dark:border-gray-800 space-y-2">
+                {relevance.histogram.map((bucket: any, index: number) => {
+                  const total = stories?.total_distinct || 0;
+                  const percentage =
+                    total > 0 ? Math.round((bucket.count / total) * 100) : 0;
+                  return (
+                    <div key={index} className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-medium">{bucket.bucket}</span>
+                        <span>
+                          {bucket.count} ({percentage}%)
+                        </span>
+                      </div>
+                      <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-blue-500"
+                          style={{ width: `${percentage}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {scoreRanges.length > 0 && (
+        <Card className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800">
+          <CardContent className="p-3">
+            <h3 className="text-sm font-medium mb-3">Score Distribution</h3>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={scoreRanges.map((item: any) => ({
+                    name: item.range,
+                    count: item.count,
+                  }))}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="name"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--background))",
+                      borderColor: "hsl(var(--border))",
+                    }}
+                  />
+                  <Bar
+                    dataKey="count"
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {aggregatedTimeSeries.length > 0 && (
+        <Card className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium">Stories Over Time</h3>
+              <WindowSelect />
+            </div>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={aggregatedTimeSeries.slice(-14)}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="name"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--background))",
+                      borderColor: "hsl(var(--border))",
+                    }}
+                  />
+                  <Bar
+                    dataKey="count"
+                    fill="hsl(var(--primary))"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {topStories && topStories.length > 0 && (
+        <Card className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800">
+          <CardContent className="p-3">
+            <h3 className="text-sm font-medium mb-3">Top Stories</h3>
+            <ScrollArea className="h-96">
+              <div className="space-y-3">
+                {topStories.map((story: any, index: number) => (
+                  <div
+                    key={index}
+                    className="p-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg"
+                  >
+                    <div className="flex items-start justify-between mb-1">
+                      <h4 className="text-xs font-medium line-clamp-1 flex-1 mr-2">
+                        {story.title}
+                      </h4>
+                      <Badge
+                        variant="secondary"
+                        className="text-xs px-1.5 py-0.5"
+                      >
+                        {Math.round((story.relevance_score || 0) * 100)}%
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{story.score ?? 0} points</span>
+                      <span>•</span>
+                      <span>{story.comment_count ?? 0} comments</span>
+                      <span>•</span>
+                      <span>
+                        {story.created_utc
+                          ? new Date(story.created_utc).toLocaleDateString()
+                          : "Unknown date"}
+                      </span>
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs ml-auto"
+                        asChild
+                      >
+                        <a
+                          href={
+                            story.url ||
+                            `https://news.ycombinator.com/item?id=${story.story_id}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="bg-white dark:bg-gray-900/60 border-gray-200 dark:border-gray-800">
+        <CardContent className="p-3">
+          <h3 className="text-sm font-medium mb-3">Execution Statistics</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="text-center">
+              <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                {runs?.total || 0}
+              </div>
+              <div className="text-xs text-muted-foreground">Total Runs</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                {runs?.completed || 0}
+              </div>
+              <div className="text-xs text-muted-foreground">Completed</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                {runs?.scheduled || 0}
+              </div>
+              <div className="text-xs text-muted-foreground">Scheduled</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold text-red-600 dark:text-red-400">
+                {runs?.failed || 0}
+              </div>
+              <div className="text-xs text-muted-foreground">Failed</div>
+            </div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+            {runs?.last_completed_at && (
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Last completed:</span>
+                <span>{new Date(runs.last_completed_at).toLocaleString()}</span>
+              </div>
+            )}
+            {runs?.next_run_at && (
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Next run:</span>
+                <span>{new Date(runs.next_run_at).toLocaleString()}</span>
+              </div>
+            )}
+            {runs?.limits && (
+              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground pt-2">
+                <div>
+                  Weekly: {runs.limits.weekly_used}/{runs.limits.weekly_limit}
+                </div>
+                <div>
+                  Monthly: {runs.limits.monthly_used}/
+                  {runs.limits.monthly_limit}
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+});
 
 // Configuration Component
 const ConfigurationSection = React.memo(function ConfigurationSection({
@@ -1667,17 +2341,10 @@ export default function HackerNewsView({ agentId }: Props) {
 
         {activeView === "performance" && (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            <div className="p-6 text-center">
-              <div className="text-muted-foreground mb-2">
-                <BarChart2 className="h-8 w-8 mx-auto" />
-              </div>
-              <h3 className="text-sm font-medium mb-1">
-                Performance Analytics
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Analytics data is not available for HackerNews agents yet.
-              </p>
-            </div>
+            <PerformanceMetrics
+              setActiveView={setActiveView}
+              agentId={agentId}
+            />
           </div>
         )}
 
