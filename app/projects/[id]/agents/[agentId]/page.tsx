@@ -1,9 +1,10 @@
 import IndividualAgentPage from "@/components/kokonutui/individual-agent-page";
 
-export default function AgentDetail({
+export default async function AgentDetail({
   params,
 }: {
-  params: { agentId: string };
+  params: Promise<{ agentId: string }>;
 }) {
-  return <IndividualAgentPage agentId={params.agentId} />;
+  const { agentId } = await params;
+  return <IndividualAgentPage agentId={agentId} />;
 }

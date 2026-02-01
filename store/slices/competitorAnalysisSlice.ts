@@ -89,6 +89,23 @@ const competitorAnalysisSlice = createSlice({
       const { api } = action.payload
       applyApiToState(state, api)
     },
+    updateSocialMediaFromResponse(state, action: PayloadAction<{ response: any }>) {
+      // Handle response from /company/competitor/social-links endpoint
+      // Response structure: { success: true, data: { links: {...}, analysis: { youtube: {...}, twitter: {...}, facebook: {...} } } }
+      const { response } = action.payload
+      const analysis = response?.data?.analysis
+      if (analysis) {
+        if (analysis.youtube) {
+          state.youtube = analysis.youtube
+        }
+        if (analysis.twitter) {
+          state.twitter = analysis.twitter
+        }
+        if (analysis.facebook) {
+          state.facebook = analysis.facebook
+        }
+      }
+    },
     clearAnalysis(state) {
       Object.assign(state, initialState)
     },
@@ -103,7 +120,7 @@ const competitorAnalysisSlice = createSlice({
   },
 })
 
-export const { setAnalysisFromApi, clearAnalysis, clearAll } = competitorAnalysisSlice.actions
+export const { setAnalysisFromApi, updateSocialMediaFromResponse, clearAnalysis, clearAll } = competitorAnalysisSlice.actions
 
 export default competitorAnalysisSlice.reducer
 
