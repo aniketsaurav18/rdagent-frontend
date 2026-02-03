@@ -1570,6 +1570,7 @@ const HackerNewsContentManagement = React.memo(
     HackerNewsContentManagementProps,
     "searchQuery" | "setSearchQuery" | "sortBy" | "setSortBy"
   >) {
+    const agentData = useSelector(selectAgentData);
     const [isSearchFocused, setIsSearchFocused] = useState(false);
     const searchInputRef = React.useRef<HTMLInputElement>(null);
     const [searchQuery, setSearchQuery] = useState("");
@@ -1655,56 +1656,86 @@ const HackerNewsContentManagement = React.memo(
                 </DropdownMenu>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto min-h-0">
-              <ScrollArea className="h-full">
-                <div className="divide-y divide-gray-200 dark:divide-gray-800">
-                  {filteredPosts.map((s) => {
-                    const domain = getDomain(s.url);
-                    const isSelected = Number(s.story_id) === selectedStoryId;
-                    return (
-                      <div
-                        key={s.story_id}
-                        onMouseEnter={() => {
-                          // Pre-fetch story details on hover for better UX
-                          if (!storyCacheRef.current.has(Number(s.story_id))) {
-                            fetchItem(Number(s.story_id))
-                              .then((full) => {
-                                storyCacheRef.current.set(
-                                  Number(s.story_id),
-                                  full
-                                );
-                                // Also pre-fetch first few comments for instant loading
-                                if (
-                                  (full as any)?.kids &&
-                                  (full as any).kids.length > 0
-                                ) {
-                                  const firstComments = (
-                                    full as any
-                                  ).kids.slice(0, 5);
-                                  fetchCommentsBatch(
-                                    firstComments,
-                                    cacheRef.current
-                                  ).catch(() => {
-                                    // Silently fail for pre-fetch
-                                  });
-                                }
-                              })
-                              .catch(() => {
-                                // Silently fail for pre-fetch
-                              });
-                          }
-                        }}
-                      >
-                        <HNContentListItem
-                          item={s}
-                          isSelected={isSelected}
-                          onSelect={onSelectStory}
-                        />
+            <div className="flex-1 min-h-0">
+              {filteredPosts.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                  {!agentData?.lastSuccessfulExecutionTime ? (
+                    <>
+                      <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full mb-4">
+                        <RefreshCw className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
                       </div>
-                    );
-                  })}
+                      <h3 className="text-sm font-medium mb-2">
+                        Waiting for data extraction to complete
+                      </h3>
+                      <p className="text-xs text-muted-foreground max-w-sm">
+                        The agent is currently processing and gathering stories. This may take a few moments.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-full mb-4">
+                        <MessageSquare className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-sm font-medium mb-2">
+                        No stories found
+                      </h3>
+                      <p className="text-xs text-muted-foreground max-w-sm">
+                        The agent has completed its run, but no stories matched your criteria. Try adjusting your keywords or filters.
+                      </p>
+                    </>
+                  )}
                 </div>
-              </ScrollArea>
+              ) : (
+                <ScrollArea className="h-full">
+                  <div className="divide-y divide-gray-200 dark:divide-gray-800">
+                    {filteredPosts.map((s) => {
+                      const domain = getDomain(s.url);
+                      const isSelected = Number(s.story_id) === selectedStoryId;
+                      return (
+                        <div
+                          key={s.story_id}
+                          onMouseEnter={() => {
+                            // Pre-fetch story details on hover for better UX
+                            if (!storyCacheRef.current.has(Number(s.story_id))) {
+                              fetchItem(Number(s.story_id))
+                                .then((full) => {
+                                  storyCacheRef.current.set(
+                                    Number(s.story_id),
+                                    full
+                                  );
+                                  // Also pre-fetch first few comments for instant loading
+                                  if (
+                                    (full as any)?.kids &&
+                                    (full as any).kids.length > 0
+                                  ) {
+                                    const firstComments = (
+                                      full as any
+                                    ).kids.slice(0, 5);
+                                    fetchCommentsBatch(
+                                      firstComments,
+                                      cacheRef.current
+                                    ).catch(() => {
+                                      // Silently fail for pre-fetch
+                                    });
+                                  }
+                                })
+                                .catch(() => {
+                                  // Silently fail for pre-fetch
+                                });
+                            }
+                          }}
+                        >
+                          <HNContentListItem
+                            item={s}
+                            isSelected={isSelected}
+                            onSelect={onSelectStory}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              )}
             </div>
           </div>
 

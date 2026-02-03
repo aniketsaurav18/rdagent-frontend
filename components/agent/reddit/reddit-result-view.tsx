@@ -1441,6 +1441,9 @@ const ContentManagement = React.memo(function ContentManagement({
   statusFilter,
   setStatusFilter,
   agentId,
+  displayPosts,
+  isLoading,
+  agentData,
 }: {
   filteredContent: DisplayPost[];
   selectedContentId: string | null;
@@ -1459,6 +1462,9 @@ const ContentManagement = React.memo(function ContentManagement({
   statusFilter: string;
   setStatusFilter: (filter: string) => void;
   agentId: string;
+  displayPosts: DisplayPost[];
+  isLoading: boolean;
+  agentData: any;
 }) {
   const [selectedPost, setSelectedPost] = React.useState<DisplayPost | null>(
     null
@@ -1622,19 +1628,49 @@ const ContentManagement = React.memo(function ContentManagement({
             className="flex-1 overflow-y-auto min-h-0"
             id="content-list-scroll-area"
           >
-            <InfinitePostsList
-              agentId={agentId}
-              searchQuery={searchQuery}
-              sortBy={sortBy}
-              statusFilter={statusFilter}
-              selectedContentId={selectedContentId}
-              onSelectContent={setSelectedContentId}
-              onSelectedPostChange={setSelectedPost}
-              showDetailPane={showDetailPane}
-              getStatusBadgeClass={getStatusBadgeClass}
-              getStatusLabel={getStatusLabel}
-              ContentListItem={ContentListItem}
-            />
+            {!isLoading && displayPosts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                {!agentData?.lastSuccessfulExecutionTime ? (
+                  <>
+                    <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full mb-4">
+                      <RefreshCw className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <h3 className="text-sm font-medium mb-2">
+                      Waiting for data extraction to complete
+                    </h3>
+                    <p className="text-xs text-muted-foreground max-w-sm">
+                      The agent is currently processing and gathering posts. This may take a few moments.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-full mb-4">
+                      <MessageSquare className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-sm font-medium mb-2">
+                      No posts found
+                    </h3>
+                    <p className="text-xs text-muted-foreground max-w-sm">
+                      The agent has completed its run, but no posts matched your criteria. Try adjusting your keywords or filters.
+                    </p>
+                  </>
+                )}
+              </div>
+            ) : (
+              <InfinitePostsList
+                agentId={agentId}
+                searchQuery={searchQuery}
+                sortBy={sortBy}
+                statusFilter={statusFilter}
+                selectedContentId={selectedContentId}
+                onSelectContent={setSelectedContentId}
+                onSelectedPostChange={setSelectedPost}
+                showDetailPane={showDetailPane}
+                getStatusBadgeClass={getStatusBadgeClass}
+                getStatusLabel={getStatusLabel}
+                ContentListItem={ContentListItem}
+              />
+            )}
           </div>
         </div>
 
@@ -1893,6 +1929,9 @@ export default function RedditResultView({ agentId }: { agentId: string }) {
             statusFilter={statusFilter}
             setStatusFilter={setStatusFilter}
             agentId={agentId}
+            displayPosts={displayPosts}
+            isLoading={isLoading}
+            agentData={agentData}
           />
         )}
 

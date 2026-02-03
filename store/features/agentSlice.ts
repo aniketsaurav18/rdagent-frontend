@@ -7,7 +7,12 @@ import { getApiUrl } from "../../lib/config";
 import { ApiAgent, HackerNewsPostType } from "@/types/agentDataTypes";
 
 // Types
-export type AgentType = "twitter" | "reddit" | "hackernews" | "youtube" | "mixed";
+export type AgentType =
+  | "twitter"
+  | "reddit"
+  | "hackernews"
+  | "youtube"
+  | "mixed";
 
 export type PostStatus =
   | "pending"
@@ -90,6 +95,7 @@ export interface AgentData {
   description: string;
   goals: string[];
   status: "active" | "paused" | "completed" | "error";
+  lastSuccessfulExecutionTime: string | null;
   created_at: string;
   updated_at: string;
   results: {
@@ -479,8 +485,6 @@ export const fetchAgentData = createAsyncThunk(
       const data = await response.json();
       const agentData = data[0]; // Get the first item from the response array
 
-      
-
       // Determine agent type first
       let agentType: AgentType = "mixed";
       if (agentData.results?.agent_platform === "twitter") {
@@ -491,6 +495,13 @@ export const fetchAgentData = createAsyncThunk(
         agentType = "hackernews";
       } else if (agentData.results?.agent_platform === "youtube") {
         agentType = "youtube";
+      }
+
+      // Extract the last successful execution time
+      let lastSuccessfulExecutionTime: string | null = null;
+      if (agentData.results?.last_successful_execution) {
+        lastSuccessfulExecutionTime =
+          agentData.results.last_successful_execution;
       }
 
       // Transform posts based on agent type
@@ -527,7 +538,6 @@ export const fetchAgentData = createAsyncThunk(
         transformedYoutubePosts = agentData.results?.posts || [];
       }
 
-     
       // Return the transformed data
       return {
         agentId,
@@ -536,6 +546,7 @@ export const fetchAgentData = createAsyncThunk(
           agent_id: agentData.agent_id,
           project_id: agentData.project_id,
           status: agentData.status,
+          lastSuccessfulExecutionTime: lastSuccessfulExecutionTime,
           error: agentData.error,
           created_at: agentData.created_at,
           platform: agentType,
@@ -1018,7 +1029,7 @@ const agentSlice = createSlice({
         agent.redditPosts = action.payload.agentData.posts;
         agent.twitterPosts = action.payload.agentData.twitter_posts;
         agent.hackernewsPosts = action.payload.agentData.hackernews_posts;
-      agent.youtubePosts = action.payload.agentData.youtube_posts || [];
+        agent.youtubePosts = action.payload.agentData.youtube_posts || [];
         agent.agentStatus = action.payload.agentData.status;
         agent.lastUpdated = new Date().toISOString();
         agent.agentData = {
@@ -1028,6 +1039,7 @@ const agentSlice = createSlice({
           description: "",
           goals: [],
           status: action.payload.agentData.status,
+          lastSuccessfulExecutionTime: action.payload.agentData.lastSuccessfulExecutionTime,
           created_at: action.payload.agentData.created_at,
           updated_at: new Date().toISOString(),
           results: {
