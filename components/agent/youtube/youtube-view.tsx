@@ -12,6 +12,7 @@ import {
   updateAgentDetails,
   selectYoutubePosts,
   fetchAgentData,
+  selectAgentData,
   type AgentDetails,
 } from "@/store/features/agentSlice";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ import {
   Sparkles,
   PanelRightClose,
   PanelRightOpen,
+  RefreshCw,
 } from "lucide-react";
 
 type YoutubeVideo = {
@@ -371,11 +373,13 @@ const YoutubeContentView = ({
   selectedVideoId,
   onSelectVideo,
   showDetails,
+  agentData,
 }: {
   videos: YoutubeVideo[];
   selectedVideoId: string | null;
   onSelectVideo: (id: string) => void;
   showDetails: boolean;
+  agentData: any;
 }) => {
   return (
     <div className="flex flex-1 min-h-0 mx-3 overflow-hidden gap-2">
@@ -386,11 +390,40 @@ const YoutubeContentView = ({
           showDetails ? "flex-[3]" : "flex-1"
         )}
       >
-        <ScrollArea className="h-full">
-          <div className="divide-y divide-gray-200 dark:divide-gray-800">
-            {videos.map((video) => {
-              const isSelected = video.video_id === selectedVideoId;
-              return (
+        {videos.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+            {!agentData?.lastSuccessfulExecutionTime ? (
+              <>
+                <div className="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-full mb-4">
+                  <RefreshCw className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
+                </div>
+                <h3 className="text-sm font-medium mb-2">
+                  Waiting for data extraction to complete
+                </h3>
+                <p className="text-xs text-muted-foreground max-w-sm">
+                  The agent is currently processing and gathering videos. This may take a few moments.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-full mb-4">
+                  <PlayCircle className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-sm font-medium mb-2">
+                  No videos found
+                </h3>
+                <p className="text-xs text-muted-foreground max-w-sm">
+                  The agent has completed its run, but no videos matched your criteria. Try adjusting your keywords or filters.
+                </p>
+              </>
+            )}
+          </div>
+        ) : (
+          <ScrollArea className="h-full">
+            <div className="divide-y divide-gray-200 dark:divide-gray-800">
+              {videos.map((video) => {
+                const isSelected = video.video_id === selectedVideoId;
+                return (
                 <div
                   key={video.video_id}
                   onClick={() => onSelectVideo(video.video_id)}
@@ -502,8 +535,9 @@ const YoutubeContentView = ({
                 </div>
               );
             })}
-          </div>
-        </ScrollArea>
+            </div>
+          </ScrollArea>
+        )}
       </div>
 
       {/* Detail pane */}
@@ -749,6 +783,7 @@ const YoutubeView: React.FC<YoutubeViewProps> = ({ agentId }) => {
   const agentDetails = useSelector(selectAgentDetails);
   const youtubePosts = useSelector(selectYoutubePosts) as YoutubeVideo[];
   const agentState = useSelector(selectAgentState);
+  const agentData = useSelector(selectAgentData);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -924,6 +959,7 @@ const YoutubeView: React.FC<YoutubeViewProps> = ({ agentId }) => {
             selectedVideoId={selectedVideoId}
             onSelectVideo={setSelectedVideoId}
             showDetails={showDetails}
+            agentData={agentData}
           />
         )}
 
